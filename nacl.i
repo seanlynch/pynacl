@@ -2,7 +2,6 @@
 
 %{
   #include "crypto_box.h"
-  #include "crypto_scalarmult_curve25519.h"
   #include "crypto_sign.h"
   #include "crypto_secretbox.h"
   #include "crypto_stream.h"
@@ -10,7 +9,7 @@
   #include "crypto_onetimeauth.h"
   #include "crypto_hash.h"
   #include "crypto_hash_sha256.h"
-
+  #include "crypto_hash_sha512.h"
   #include "crypto_uint32.h"
   #include "randombytes.h"
 
@@ -216,6 +215,13 @@ void randombytes(unsigned char *buffer, unsigned long long bytes);
 /**
  * Hash stuff
  */
+%constant int crypto_hash_sha256_BYTES;
+%constant char *crypto_hash_sha256_IMPLEMENTATION;
+%constant char *crypto_hash_sha256_VERSION;
+%constant int crypto_hash_sha512_BYTES;
+%constant char *crypto_hash_sha512_IMPLEMENTATION;
+%constant char *crypto_hash_sha512_VERSION;
+
 int crypto_hash_sha256(unsigned char hash[32], const unsigned char *m,
                        unsigned long long mlen);
 int crypto_hash_sha512(unsigned char hash[64], const unsigned char *m,
@@ -228,9 +234,13 @@ int crypto_hash_sha512(unsigned char hash[64], const unsigned char *m,
 
 %constant int crypto_box_PUBLICKEYBYTES;
 %constant int crypto_box_SECRETKEYBYTES;
+%constant int crypto_box_BEFORENMBYTES;
+%constant int crypto_box_NONCEBYTES;
 %constant int crypto_box_ZEROBYTES;
 %constant int crypto_box_BOXZEROBYTES;
-%constant int crypto_box_NONCEBYTES;
+%constant char *crypto_box_PRIMITIVE;
+%constant char *crypto_box_IMPLEMENTATION;
+%constant char *crypto_box_VERSION;
 
 int crypto_box(unsigned char out[crypto_box_BOXZEROBYTES],
                const unsigned char in[crypto_box_ZEROBYTES],
@@ -263,8 +273,12 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
 /**
  * Signatures
  */
+%constant int crypto_sign_BYTES;
 %constant int crypto_sign_PUBLICKEYBYTES;
 %constant int crypto_sign_SECRETKEYBYTES;
+%constant char *crypto_sign_PRIMITIVE;
+%constant char *crypto_sign_IMPLEMENTATION;
+%constant char *crypto_sign_VERSION;
 
 int crypto_sign_keypair_fromseed(unsigned char pk[crypto_sign_PUBLICKEYBYTES],
                                  unsigned char sk[crypto_sign_SECRETKEYBYTES],
