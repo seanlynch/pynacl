@@ -38,7 +38,7 @@
 
   int crypto_sign_keypair_fromseed(unsigned char *pk,
                                    unsigned char *sk,
-                                   unsigned char *seed,
+                                   const unsigned char *seed,
                                    unsigned long long seedlen) {
     sc25519 scsk;
     ge25519 gepk;
@@ -63,7 +63,7 @@
 %typemap(in) (const unsigned char *m, unsigned long long mlen) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
   $1 = (unsigned char *)PyString_AsString($input);
   $2 = PyString_Size($input);
@@ -90,10 +90,10 @@
   Py_XDECREF(temp2);
 }
 
-%typemap(in) (unsigned char *seed, unsigned long long seedlen) {
+%typemap(in) (const unsigned char *seed, unsigned long long seedlen) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
   $1 = (unsigned char *)PyString_AS_STRING($input);
   $2 = (unsigned long long)PyString_GET_SIZE($input);
@@ -102,11 +102,11 @@
 %typemap(in) const unsigned char [ANY] {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
   if (PyString_GET_SIZE($input) != $1_dim0) {
     PyErr_Format(PyExc_ValueError, "Expecting a string of length %d", $1_dim0);
-    return NULL;
+    SWIG_fail;
   }
   $1 = (unsigned char *)PyString_AS_STRING($input);
 }
@@ -117,7 +117,7 @@
      (unsigned long long temp) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
   $4 = PyString_Size($input);
   $result = PyString_FromStringAndSize(NULL, $4 + crypto_sign_BYTES);
@@ -132,13 +132,13 @@
   (unsigned long long temp) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
-  $4 = PyString_Size($input);
+  $4 = PyString_GET_SIZE($input);
   $result = PyString_FromStringAndSize(NULL, $4);
-  $1 = (unsigned char *)PyString_AsString($result);
+  $1 = (unsigned char *)PyString_AS_STRING($result);
   $2 = &temp;
-  $3 = (unsigned char *)PyString_AsString($input);
+  $3 = (unsigned char *)PyString_AS_STRING($input);
 }
 
 %typemap(argout) (unsigned char *sm, unsigned long long *smlen),
@@ -146,19 +146,32 @@
   _PyString_Resize(&$result, *$2);
 }
 
-%typemap(in) (unsigned char *buffer, unsigned long long bytes) {
+%typemap(in) (unsigned char *buffer, unsigned long long bytes),
+             (unsigned char *c, unsigned long long clen) {
   $2 = PyInt_AsUnsignedLongLongMask($input);
   if ($2 == -1 && PyErr_Occurred() != NULL) {
-    return NULL;
+    SWIG_fail;
   }
   $result = PyString_FromStringAndSize(NULL, $2);
   $1 = (unsigned char *)PyString_AS_STRING($result);
 }
 
+%typemap(in) (unsigned char *c, const unsigned char *in,
+              unsigned long long clen) {
+  if (!PyString_Check($input)) {
+    PyErr_SetString(PyExc_ValueError, "Expecting a string");
+    SWIG_fail;
+  }
+  $3 = PyString_GET_SIZE($input);
+  $result = PyString_FromStringAndSize(NULL, $3);
+  $1 = (unsigned char *)PyString_AS_STRING($result);
+  $2 = (unsigned char *)PyString_AS_STRING($input);
+}
+
 %typemap(out) int {
   if ($1 != 0) {
     PyErr_Format(PyExc_ValueError, "Operation failed with error %d", $1);
-    return NULL;
+    SWIG_fail;
   }
 }
 
@@ -181,7 +194,7 @@
     unsigned long long mlen) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
+    SWIG_fail;
   }
   $3 = PyString_GET_SIZE($input) + $2_dim0;
   // Need to pad the beginning
@@ -231,7 +244,6 @@ int crypto_hash_sha512(unsigned char hash[64], const unsigned char *m,
 /**
  * Authenticated public-key encryption
  */
-
 %constant int crypto_box_PUBLICKEYBYTES;
 %constant int crypto_box_SECRETKEYBYTES;
 %constant int crypto_box_BEFORENMBYTES;
@@ -282,7 +294,7 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
 
 int crypto_sign_keypair_fromseed(unsigned char pk[crypto_sign_PUBLICKEYBYTES],
                                  unsigned char sk[crypto_sign_SECRETKEYBYTES],
-                                 unsigned char *seed,
+                                 const unsigned char *seed,
                                  unsigned long long seedlen); // Custom
 int crypto_sign_keypair(unsigned char pk[crypto_sign_PUBLICKEYBYTES],
                         unsigned char sk[crypto_sign_SECRETKEYBYTES]);
@@ -315,3 +327,21 @@ int crypto_secretbox_open(unsigned char out[crypto_secretbox_ZEROBYTES],
                           unsigned long long mlen,
                           const unsigned char n[crypto_secretbox_NONCEBYTES],
                           const unsigned char k[crypto_secretbox_KEYBYTES]);
+
+
+/**
+ * Secret-key encryption
+ */
+%constant int crypto_stream_KEYBYTES;
+%constant int crypto_stream_NONCEBYTES;
+%constant char *crypto_stream_PRIMITIVE;
+%constant char *crypto_stream_IMPLEMENTATION;
+%constant char *crypto_stream_VERSION;
+
+int crypto_stream(unsigned char *c, unsigned long long clen,
+                  const unsigned char n[crypto_stream_NONCEBYTES],
+                  const unsigned char k[crypto_stream_KEYBYTES]);
+int crypto_stream_xor(unsigned char *c, const unsigned char *in,
+                      unsigned long long clen,
+                      const unsigned char n[crypto_stream_NONCEBYTES],
+                      const unsigned char k[crypto_stream_KEYBYTES]);

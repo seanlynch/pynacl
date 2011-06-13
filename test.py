@@ -70,25 +70,6 @@ class BoxTestCase(unittest.TestCase):
                           self.sk1)
 
 
-class SecretBoxTestCase(unittest.TestCase):
-    msg = "The quick brown fox jumps over the lazy dog."
-    def setUp(self):
-        self.k = nacl.randombytes(nacl.crypto_secretbox_KEYBYTES)
-
-    def test_secretbox(self):
-        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
-        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
-        m = nacl.crypto_secretbox_open(c, nonce, self.k)
-        self.assertEqual(m, self.msg)
-
-    def test_secretbox_badsig(self):
-        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
-        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
-        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
-        self.assertRaises(ValueError, nacl.crypto_secretbox_open, c1, nonce,
-                          self.k)
-
-
 class SignTestCase(unittest.TestCase):
     msg = "The quick brown fox jumps over the lazy dog."
 
@@ -123,6 +104,42 @@ class SignTestCase(unittest.TestCase):
     def test_failed_signature(self):
         sm = nacl.crypto_sign(self.msg, self.sk)
         self.assertRaises(ValueError, nacl.crypto_sign_open, sm, self.pk1)
+
+
+class SecretBoxTestCase(unittest.TestCase):
+    msg = "The quick brown fox jumps over the lazy dog."
+    def setUp(self):
+        self.k = nacl.randombytes(nacl.crypto_secretbox_KEYBYTES)
+
+    def test_secretbox(self):
+        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
+        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
+        m = nacl.crypto_secretbox_open(c, nonce, self.k)
+        self.assertEqual(m, self.msg)
+
+    def test_secretbox_badsig(self):
+        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
+        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
+        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
+        self.assertRaises(ValueError, nacl.crypto_secretbox_open, c1, nonce,
+                          self.k)
+
+
+class StreamTestCase(unittest.TestCase):
+    msg = "The quick brown fox jumps over the lazy dog."
+    def setUp(self):
+        self.k = nacl.randombytes(nacl.crypto_stream_KEYBYTES)
+
+    def test_stream(self):
+        nonce = nacl.randombytes(nacl.crypto_stream_NONCEBYTES)
+        c = nacl.crypto_stream(1000, nonce, self.k)
+        self.assertEqual(len(c), 1000)
+
+    def test_stream_xor(self):
+        nonce = nacl.randombytes(nacl.crypto_stream_NONCEBYTES)
+        c = nacl.crypto_stream_xor(self.msg, nonce, self.k)
+        m = nacl.crypto_stream_xor(c, nonce, self.k)
+        self.assertEqual(m, self.msg)
 
 
 if __name__ == '__main__':
