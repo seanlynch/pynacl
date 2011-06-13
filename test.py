@@ -45,6 +45,7 @@ class HashTestCase(unittest.TestCase):
                         "90cea77a1bbc6c7ed9cf205e67b7f2b8fd4c7dfd3a7a8617e45f3"
                         "c463d481c7e586c39ac1ed")
 
+
 class BoxTestCase(unittest.TestCase):
     msg = "The quick brown fox jumps over the lazy dog."
     def setUp(self):
@@ -69,8 +70,27 @@ class BoxTestCase(unittest.TestCase):
                           self.sk1)
 
 
+class SecretBoxTestCase(unittest.TestCase):
+    msg = "The quick brown fox jumps over the lazy dog."
+    def setUp(self):
+        self.k = nacl.randombytes(nacl.crypto_secretbox_KEYBYTES)
+
+    def test_secretbox(self):
+        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
+        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
+        m = nacl.crypto_secretbox_open(c, nonce, self.k)
+        self.assertEqual(m, self.msg)
+
+    def test_secretbox_badsig(self):
+        nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
+        c = nacl.crypto_secretbox(self.msg, nonce, self.k)
+        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
+        self.assertRaises(ValueError, nacl.crypto_secretbox_open, c1, nonce,
+                          self.k)
+
+
 class SignTestCase(unittest.TestCase):
-    msg = "hello world"
+    msg = "The quick brown fox jumps over the lazy dog."
 
     def setUp(self):
         self.pk, self.sk = nacl.crypto_sign_keypair()

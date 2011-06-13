@@ -173,6 +173,12 @@
               unsigned long long mlen),
    (unsigned char out[crypto_box_ZEROBYTES],
     const unsigned char in[crypto_box_BOXZEROBYTES],
+    unsigned long long mlen),
+   (unsigned char out[crypto_secretbox_BOXZEROBYTES],
+    const unsigned char in[crypto_secretbox_ZEROBYTES],
+    unsigned long long mlen),
+   (unsigned char out[crypto_secretbox_ZEROBYTES],
+    const unsigned char in[crypto_secretbox_BOXZEROBYTES],
     unsigned long long mlen) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
@@ -190,6 +196,12 @@
                   unsigned long long mlen),
    (unsigned char out[crypto_box_ZEROBYTES],
     const unsigned char in[crypto_box_BOXZEROBYTES],
+    unsigned long long mlen),
+   (unsigned char out[crypto_secretbox_BOXZEROBYTES],
+    const unsigned char in[crypto_secretbox_ZEROBYTES],
+    unsigned long long mlen),
+   (unsigned char out[crypto_secretbox_ZEROBYTES],
+    const unsigned char in[crypto_secretbox_BOXZEROBYTES],
     unsigned long long mlen) {
   $result = PyString_FromStringAndSize((char *)&$1[$1_dim0], $3 - $1_dim0);
   free($1);
@@ -249,7 +261,7 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
                             const unsigned char k[crypto_box_BEFORENMBYTES]);
 
 /**
- * Signature stuff
+ * Signatures
  */
 %constant int crypto_sign_PUBLICKEYBYTES;
 %constant int crypto_sign_SECRETKEYBYTES;
@@ -266,3 +278,26 @@ int crypto_sign(unsigned char *sm, unsigned long long *smlen,
 int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
                      const unsigned char *sm, unsigned long long smlen,
                      const unsigned char pk[crypto_sign_PUBLICKEYBYTES]);
+
+
+/**
+ * Authenticated secret-key encryption
+ */
+%constant int crypto_secretbox_KEYBYTES;
+%constant int crypto_secretbox_NONCEBYTES;
+%constant int crypto_secretbox_ZEROBYTES;
+%constant int crypto_secretbox_BOXZEROBYTES;
+%constant char *crypto_secretbox_PRIMITIVE;
+%constant char *crypto_secretbox_IMPLEMENTATION;
+%constant char *crypto_secretbox_VERSION;
+
+int crypto_secretbox(unsigned char out[crypto_secretbox_BOXZEROBYTES],
+                     const unsigned char in[crypto_secretbox_ZEROBYTES],
+                     unsigned long long mlen,
+                     const unsigned char n[crypto_secretbox_NONCEBYTES],
+                     const unsigned char k[crypto_secretbox_KEYBYTES]);
+int crypto_secretbox_open(unsigned char out[crypto_secretbox_ZEROBYTES],
+                          const unsigned char in[crypto_secretbox_BOXZEROBYTES],
+                          unsigned long long mlen,
+                          const unsigned char n[crypto_secretbox_NONCEBYTES],
+                          const unsigned char k[crypto_secretbox_KEYBYTES]);
