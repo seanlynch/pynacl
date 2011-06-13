@@ -4,6 +4,16 @@ import unittest
 
 import nacl
 
+class RandomTestCase(unittest.TestCase):
+    def test_random_10(self):
+        r = nacl.randombytes(10)
+        self.assertEqual(len(r), 10)
+        s = nacl.randombytes(10)
+        self.assertNotEqual(r, s)
+
+    def test_random_1000(self):
+        r = nacl.randombytes(1000)
+        self.assertEqual(len(r), 1000)
 
 
 class HashTestCase(unittest.TestCase):
@@ -35,23 +45,55 @@ class HashTestCase(unittest.TestCase):
                         "90cea77a1bbc6c7ed9cf205e67b7f2b8fd4c7dfd3a7a8617e45f3"
                         "c463d481c7e586c39ac1ed")
 
+class BoxTestCase(unittest.TestCase):
+    msg = "The quick brown fox jumps over the lazy dog."
+    def setUp(self):
+        self.pk1, self.sk1 = nacl.crypto_box_keypair()
+        self.pk2, self.sk2 = nacl.crypto_box_keypair()
+
+    def test_key_sizes(self):
+        self.assertEqual(len(self.pk1), nacl.crypto_box_PUBLICKEYBYTES)
+        self.assertEqual(len(self.sk1), nacl.crypto_box_SECRETKEYBYTES)
+
+    def test_box(self):
+        nonce = nacl.randombytes(nacl.crypto_box_NONCEBYTES)
+        c = nacl.crypto_box(self.msg, nonce, self.pk2, self.sk1)
+        m = nacl.crypto_box_open(c, nonce, self.pk1, self.sk2)
+        self.assertEqual(m, self.msg)
+
+    def test_box_badsig(self):
+        nonce = nacl.randombytes(nacl.crypto_box_NONCEBYTES)
+        c = nacl.crypto_box(self.msg, nonce, self.pk1, self.sk2)
+        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
+        self.assertRaises(ValueError, nacl.crypto_box_open, c1, nonce, self.pk2,
+                          self.sk1)
+
 
 class SignTestCase(unittest.TestCase):
     msg = "hello world"
 
     def setUp(self):
         self.pk, self.sk = nacl.crypto_sign_keypair()
-        self.pk1, self.sk1 = nacl.crypto_sign_keypair()
+        self.pk1, self.sk1 = nacl.crypto_sign_keypair_fromseed("hello world")
+
+    def test_keys_different(self):
         self.assertNotEqual(self.pk, self.pk1)
         self.assertNotEqual(self.sk, self.sk1)
         self.assertNotEqual(self.pk, self.sk)
         self.assertNotEqual(self.pk1, self.sk1)
 
-    def test_pk_length(self):
+    def test_key_length(self):
         self.assertEqual(len(self.pk), nacl.crypto_sign_PUBLICKEYBYTES)
-
-    def test_sk_length(self):
         self.assertEqual(len(self.sk), nacl.crypto_sign_SECRETKEYBYTES)
+
+    def test_seed(self):
+        self.assertEqual(binascii.b2a_hex(self.pk1),
+                         "683d8d0458ef6ec4cfef25157f5d88ce7a0bba334fd102fafc7e"
+                         "2751410d5718")
+        self.assertEqual(binascii.b2a_hex(self.sk1),
+                         "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd"
+                         "3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f"
+                         "605dcf7dc5542e93ae9cd76f")
 
     def test_signature(self):
         sm = nacl.crypto_sign(self.msg, self.sk)

@@ -37,10 +37,10 @@
   void ge25519_scalarmult_base(ge25519 *r, const sc25519 *s);
   void sc25519_from32bytes(sc25519 *r, const unsigned char x[32]);
 
-  void crypto_sign_keypair_fromseed(unsigned char *pk,
-                                    unsigned char *sk,
-                                    unsigned char *seed,
-                                    int seedlen) {
+  int crypto_sign_keypair_fromseed(unsigned char *pk,
+                                   unsigned char *sk,
+                                   unsigned char *seed,
+                                   unsigned long long seedlen) {
     sc25519 scsk;
     ge25519 gepk;
 
@@ -54,6 +54,7 @@
 
     ge25519_scalarmult_base(&gepk, &scsk);
     ge25519_pack(pk, &gepk);
+    return 0;
   }
 
 %}
@@ -69,86 +70,46 @@
   $2 = PyString_Size($input);
 }
 
-%typemap(in, numinputs=0) unsigned char *sha256hash (unsigned char temp[32]) {
-  $1 = temp;
+%typemap(in, numinputs=0) unsigned char hash[ANY], unsigned char k[ANY] {
+  $result = PyString_FromStringAndSize(NULL, $1_dim0);
+  $1 = (unsigned char *)PyString_AsString($result);
 }
 
-%typemap(argout) unsigned char *sha256hash {
-  $result = PyString_FromStringAndSize((char *)$1, 32);
+// For some reason [ANY] doesn't work for multi-argument typemaps.
+%typemap(in, numinputs=0) (unsigned char pk[crypto_sign_PUBLICKEYBYTES],
+                           unsigned char sk[crypto_sign_SECRETKEYBYTES])
+                          (PyObject *temp1, PyObject *temp2),
+                          (unsigned char pk[crypto_box_PUBLICKEYBYTES],
+                           unsigned char sk[crypto_box_SECRETKEYBYTES])
+                          (PyObject *temp1, PyObject *temp2) {
+  temp1 = PyString_FromStringAndSize(NULL, $1_dim0);
+  $1 = (unsigned char *)PyString_AS_STRING(temp1);
+  temp2 = PyString_FromStringAndSize(NULL, $2_dim0);
+  $2 = (unsigned char *)PyString_AS_STRING(temp2);
+  $result = PyTuple_Pack(2, temp1, temp2);
+  Py_XDECREF(temp1);
+  Py_XDECREF(temp2);
 }
 
-int crypto_hash_sha256(unsigned char *sha256hash, const unsigned char *m,
-                       unsigned long long mlen);
-
-%typemap(in, numinputs=0) unsigned char *sha512hash (unsigned char temp[64]) {
-  $1 = temp;
-}
-
-%typemap(argout) unsigned char *sha512hash {
-  $result = PyString_FromStringAndSize((char *)$1, 64);
-}
-
-int crypto_hash_sha512(unsigned char *sha512hash, const unsigned char *m,
-                       unsigned long long mlen);
-
-
-%constant int crypto_sign_PUBLICKEYBYTES;
-%constant int crypto_sign_SECRETKEYBYTES;
-
-%typemap(in, numinputs=0) (unsigned char *pk, unsigned char *sk)
-  (unsigned char temp1[crypto_sign_PUBLICKEYBYTES],
-   unsigned char temp2[crypto_sign_SECRETKEYBYTES]) {
-  $1 = temp1;
-  $2 = temp2;
-}
-
-%typemap(argout) (unsigned char *pk, unsigned char *sk) {
-  $result = PyList_New(2);
-  PyList_SetItem($result, 0,
-                 PyString_FromStringAndSize((char *)$1,
-                                            crypto_sign_PUBLICKEYBYTES));
-  PyList_SetItem($result, 1,
-                 PyString_FromStringAndSize((char *)$2,
-                                            crypto_sign_SECRETKEYBYTES));
-}
-
-%typemap(in) (unsigned char *seed, int seedlen) {
+%typemap(in) (unsigned char *seed, unsigned long long seedlen) {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     return NULL;
   }
-  $1 = (unsigned char *)PyString_AsString($input);
-  $2 = PyString_Size($input);
+  $1 = (unsigned char *)PyString_AS_STRING($input);
+  $2 = (unsigned long long)PyString_GET_SIZE($input);
 }
 
-void crypto_sign_keypair_fromseed(unsigned char *pk, unsigned char *sk,
-                                  unsigned char *seed, int seedlen);
-int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
-
-%typemap(in) unsigned char *pk {
+%typemap(in) const unsigned char [ANY] {
   if (!PyString_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     return NULL;
   }
-  if (PyString_Size($input) != crypto_sign_PUBLICKEYBYTES) {
-    PyErr_Format(PyExc_ValueError, "Expecting a string of length %d",
-                 crypto_sign_PUBLICKEYBYTES);
+  if (PyString_GET_SIZE($input) != $1_dim0) {
+    PyErr_Format(PyExc_ValueError, "Expecting a string of length %d", $1_dim0);
     return NULL;
   }
-  $1 = (unsigned char *)PyString_AsString($input);
-}
-
-%typemap(in) unsigned char *sk {
-  if (!PyString_Check($input)) {
-    PyErr_SetString(PyExc_ValueError, "Expecting a string");
-    return NULL;
-  }
-  if (PyString_Size($input) != crypto_sign_SECRETKEYBYTES) {
-    PyErr_Format(PyExc_ValueError, "Expecting a string of length %d",
-                 crypto_sign_SECRETKEYBYTES);
-    return NULL;
-  }
-  $1 = (unsigned char *)PyString_AsString($input);
+  $1 = (unsigned char *)PyString_AS_STRING($input);
 }
 
 %typemap(in)
@@ -186,8 +147,13 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
   _PyString_Resize(&$result, *$2);
 }
 
-%typemap(freearg) unsigned char *sm, unsigned char *m {
-  free($1);
+%typemap(in) (unsigned char *buffer, unsigned long long bytes) {
+  $2 = PyInt_AsUnsignedLongLongMask($input);
+  if ($2 == -1 && PyErr_Occurred() != NULL) {
+    return NULL;
+  }
+  $result = PyString_FromStringAndSize(NULL, $2);
+  $1 = (unsigned char *)PyString_AS_STRING($result);
 }
 
 %typemap(out) int {
@@ -197,11 +163,106 @@ int crypto_sign_keypair(unsigned char *pk, unsigned char *sk);
   }
 }
 
+%typemap(out) void randombytes {}
+
+/**
+ * crypto_box typemaps. The dimensions on the arrays indicate padding.
+ */
+%typemap(in) (unsigned char out[crypto_box_BOXZEROBYTES],
+              const unsigned char in[crypto_box_ZEROBYTES],
+              unsigned long long mlen),
+   (unsigned char out[crypto_box_ZEROBYTES],
+    const unsigned char in[crypto_box_BOXZEROBYTES],
+    unsigned long long mlen) {
+  if (!PyString_Check($input)) {
+    PyErr_SetString(PyExc_ValueError, "Expecting a string");
+    return NULL;
+  }
+  $3 = PyString_GET_SIZE($input) + $2_dim0;
+  // Need to pad the beginning
+  $1 = (unsigned char *)calloc($3 + $1_dim0, sizeof(unsigned char));
+  $2 = (unsigned char *)calloc($3 + $2_dim0, sizeof(unsigned char));
+  memcpy(&$2[$2_dim0], PyString_AS_STRING($input), $3);
+}
+
+%typemap(argout) (unsigned char out[crypto_box_BOXZEROBYTES],
+                  const unsigned char in [crypto_box_ZEROBYTES],
+                  unsigned long long mlen),
+   (unsigned char out[crypto_box_ZEROBYTES],
+    const unsigned char in[crypto_box_BOXZEROBYTES],
+    unsigned long long mlen) {
+  $result = PyString_FromStringAndSize((char *)&$1[$1_dim0], $3 - $1_dim0);
+  free($1);
+  free($2);
+}
+
+/**
+ * Utilities
+ */
+void randombytes(unsigned char *buffer, unsigned long long bytes);
+
+/**
+ * Hash stuff
+ */
+int crypto_hash_sha256(unsigned char hash[32], const unsigned char *m,
+                       unsigned long long mlen);
+int crypto_hash_sha512(unsigned char hash[64], const unsigned char *m,
+                       unsigned long long mlen);
+
+
+/**
+ * Authenticated public-key encryption
+ */
+
+%constant int crypto_box_PUBLICKEYBYTES;
+%constant int crypto_box_SECRETKEYBYTES;
+%constant int crypto_box_ZEROBYTES;
+%constant int crypto_box_BOXZEROBYTES;
+%constant int crypto_box_NONCEBYTES;
+
+int crypto_box(unsigned char out[crypto_box_BOXZEROBYTES],
+               const unsigned char in[crypto_box_ZEROBYTES],
+               unsigned long long mlen,
+               const unsigned char n[crypto_box_NONCEBYTES],
+               const unsigned char pk[crypto_box_PUBLICKEYBYTES],
+               const unsigned char sk[crypto_box_SECRETKEYBYTES]);
+int crypto_box_open(unsigned char out[crypto_box_ZEROBYTES],
+                    const unsigned char in[crypto_box_BOXZEROBYTES],
+                    unsigned long long mlen,
+                    const unsigned char n[crypto_box_NONCEBYTES],
+                    const unsigned char pk[crypto_box_PUBLICKEYBYTES],
+                    const unsigned char sk[crypto_box_SECRETKEYBYTES]);
+int crypto_box_keypair(unsigned char pk[crypto_box_PUBLICKEYBYTES],
+                       unsigned char sk[crypto_box_SECRETKEYBYTES]);
+int crypto_box_beforenm(unsigned char k[crypto_box_BEFORENMBYTES],
+                        const unsigned char pk[crypto_box_PUBLICKEYBYTES],
+                        const unsigned char sk[crypto_box_PUBLICKEYBYTES]);
+int crypto_box_afternm(unsigned char out[crypto_box_BOXZEROBYTES],
+                       const unsigned char in[crypto_box_ZEROBYTES],
+                       unsigned long long mlen,
+                       const unsigned char n[crypto_box_NONCEBYTES],
+                       const unsigned char k[crypto_box_BEFORENMBYTES]);
+int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
+                            const unsigned char in[crypto_box_BOXZEROBYTES],
+                            unsigned long long mlen,
+                            const unsigned char n[crypto_box_NONCEBYTES],
+                            const unsigned char k[crypto_box_BEFORENMBYTES]);
+
+/**
+ * Signature stuff
+ */
+%constant int crypto_sign_PUBLICKEYBYTES;
+%constant int crypto_sign_SECRETKEYBYTES;
+
+int crypto_sign_keypair_fromseed(unsigned char pk[crypto_sign_PUBLICKEYBYTES],
+                                 unsigned char sk[crypto_sign_SECRETKEYBYTES],
+                                 unsigned char *seed,
+                                 unsigned long long seedlen); // Custom
+int crypto_sign_keypair(unsigned char pk[crypto_sign_PUBLICKEYBYTES],
+                        unsigned char sk[crypto_sign_SECRETKEYBYTES]);
 int crypto_sign(unsigned char *sm, unsigned long long *smlen,
                 const unsigned char *m, unsigned long long mlen,
-                unsigned char *sk);
+                const unsigned char sk[crypto_sign_SECRETKEYBYTES]);
 int crypto_sign_open(unsigned char *m, unsigned long long *mlen,
                      const unsigned char *sm, unsigned long long smlen,
-                     unsigned char *pk);
-
-
+                     const unsigned char pk[crypto_sign_PUBLICKEYBYTES]);
