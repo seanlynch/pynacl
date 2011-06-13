@@ -40,3 +40,9 @@ Testing
 -------
 
 To run the tests, just run the script "test.py" in the distribution directory.
+
+
+License
+------
+
+PyNaCl is released under version 2.0 of the Apache license.
