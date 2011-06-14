@@ -97,6 +97,25 @@ class BoxTestCase(unittest.TestCase):
                           self.sk1)
 
 
+class ScalarMultTestCase(unittest.TestCase):
+    def setUp(self):
+        self.sk1 = nacl.randombytes(nacl.crypto_scalarmult_curve25519_BYTES)
+        self.pk1 = nacl.crypto_scalarmult_curve25519_base(self.sk1)
+        self.sk2 = nacl.randombytes(nacl.crypto_scalarmult_curve25519_BYTES)
+        self.pk2 = nacl.crypto_scalarmult_curve25519_base(self.sk2)
+
+    def test_dh(self):
+        """Check that both shared secrets are the same."""
+        s1 = nacl.crypto_scalarmult_curve25519(self.sk1, self.pk2)
+        s2 = nacl.crypto_scalarmult_curve25519(self.sk2, self.pk1)
+        self.assertEqual(s1, s2)
+
+    def test_dh_badkey(self):
+        s1 = nacl.crypto_scalarmult_curve25519(self.sk1, self.pk2)
+        s2 = nacl.crypto_scalarmult_curve25519(perturb(self.sk2), self.pk1)
+        self.assertNotEqual(s1, s2)
+
+
 class SignTestCase(unittest.TestCase):
     msg = b"The quick brown fox jumps over the lazy dog."
 

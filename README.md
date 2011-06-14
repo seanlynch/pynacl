@@ -5,10 +5,28 @@ Overview
 --------
 
 This is a simple wrapper for the [NaCl](http://nacl.cace-project.eu/)
-cryptographic library (not Google's NativeClient). It currently wraps
-crypto\_hash\_sha256, crypto\_hash\_sha512, crypto\_randombytes, and
-the crypto\_box, crypto\_sign, crypto\_secretbox, crypto\_stream,
-crypto\_auth, crypto\_scalarmult and crypto\_onetimeauth default primitives.
+cryptographic library (not Google's NativeClient).
+
+
+Features
+--------
+
+PyNaCl currently wraps the following NaCl functions:
+
+* crypto\_hash\_sha256
+* crypto\_hash\_sha512
+* crypto\_randombytes
+
+And the following groups of functions (if not otherwise specified by
+the suffix, it just wraps the default primitive):
+
+* crypto\_scalarmult\_curve25519
+* crypto\_box
+* crypto\_sign
+* crypto\_secretbox
+* crypto\_stream
+* crypto\_auth
+* crypto\_onetimeauth
 
 
 API
@@ -58,3 +76,11 @@ License
 ------
 
 PyNaCl is released under version 2.0 of the Apache license.
+
+
+To do
+-----
+
+* Convert to a package so I can add Python code
+* Implement a higher-level API
+* Implement fromseed versions of other key generation functions

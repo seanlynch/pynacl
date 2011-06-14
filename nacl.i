@@ -18,6 +18,7 @@
 
 %{
   #include "crypto_box.h"
+  #include "crypto_scalarmult_curve25519.h"
   #include "crypto_sign.h"
   #include "crypto_scalarmult_curve25519.h"
   #include "crypto_secretbox.h"
@@ -317,6 +318,27 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
                             unsigned long long mlen,
                             const unsigned char n[crypto_box_NONCEBYTES],
                             const unsigned char k[crypto_box_BEFORENMBYTES]);
+
+
+/**
+ * Scalar multiplication
+ */
+%constant int crypto_scalarmult_curve25519_BYTES;
+%constant int crypto_scalarmult_curve25519_SCALARBYTES;
+%constant char *crypto_scalarmult_curve25519_IMPLEMENTATION;
+%constant char *crypto_scalarmult_curve25519_VERSION;
+
+int crypto_scalarmult_curve25519(unsigned char
+                                   q[crypto_scalarmult_curve25519_BYTES],
+                                 const unsigned char
+                                   n[crypto_scalarmult_curve25519_SCALARBYTES],
+                                 const unsigned char
+                                   p[crypto_scalarmult_curve25519_BYTES]);
+int crypto_scalarmult_curve25519_base(unsigned char
+                                        q[crypto_scalarmult_curve25519_BYTES],
+                                      const unsigned char
+                                        n[crypto_scalarmult_curve25519_SCALARBYTES]);
+
 
 /**
  * Scalar multiplication
