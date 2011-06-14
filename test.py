@@ -4,6 +4,10 @@ import unittest
 
 import nacl
 
+def perturb(s):
+    return s[:-1] + chr((ord(s[-1]) + 1) % 256)
+
+
 class RandomTestCase(unittest.TestCase):
     def test_random_10(self):
         r = nacl.randombytes(10)
@@ -48,6 +52,10 @@ class HashTestCase(unittest.TestCase):
 
 class BoxTestCase(unittest.TestCase):
     msg = "The quick brown fox jumps over the lazy dog."
+
+    def nonce(self):
+        return nacl.randombytes(nacl.crypto_box_NONCEBYTES)
+
     def setUp(self):
         self.pk1, self.sk1 = nacl.crypto_box_keypair()
         self.pk2, self.sk2 = nacl.crypto_box_keypair()
@@ -57,16 +65,28 @@ class BoxTestCase(unittest.TestCase):
         self.assertEqual(len(self.sk1), nacl.crypto_box_SECRETKEYBYTES)
 
     def test_box(self):
-        nonce = nacl.randombytes(nacl.crypto_box_NONCEBYTES)
+        nonce = self.nonce()
         c = nacl.crypto_box(self.msg, nonce, self.pk2, self.sk1)
         m = nacl.crypto_box_open(c, nonce, self.pk1, self.sk2)
         self.assertEqual(m, self.msg)
 
     def test_box_badsig(self):
-        nonce = nacl.randombytes(nacl.crypto_box_NONCEBYTES)
+        nonce = self.nonce()
         c = nacl.crypto_box(self.msg, nonce, self.pk1, self.sk2)
-        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
+        c1 = perturb(c)
         self.assertRaises(ValueError, nacl.crypto_box_open, c1, nonce, self.pk2,
+                          self.sk1)
+
+    def test_box_badskey(self):
+        nonce = self.nonce()
+        c = nacl.crypto_box(self.msg, nonce, self.pk2, perturb(self.sk1))
+        self.assertRaises(ValueError, nacl.crypto_box_open, c, nonce, self.pk1,
+                          self.sk2)
+
+    def test_box_badpkey(self):
+        nonce = self.nonce()
+        c = nacl.crypto_box(self.msg, nonce, perturb(self.pk1), self.sk2)
+        self.assertRaises(ValueError, nacl.crypto_box_open, c, nonce, self.pk2,
                           self.sk1)
 
 
