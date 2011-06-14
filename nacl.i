@@ -81,13 +81,13 @@
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $1 = (unsigned char *)PyString_AsString($input);
-  $2 = PyString_Size($input);
+  $1 = (unsigned char *)PyString_AS_STRING($input);
+  $2 = PyString_GET_SIZE($input);
 }
 
-%typemap(in, numinputs=0) unsigned char hash[ANY], unsigned char k[ANY] {
+%typemap(in, numinputs=0) unsigned char [ANY] {
   $result = PyString_FromStringAndSize(NULL, $1_dim0);
-  $1 = (unsigned char *)PyString_AsString($result);
+  $1 = (unsigned char *)PyString_AS_STRING($result);
 }
 
 // For some reason [ANY] doesn't work for multi-argument typemaps.
@@ -102,8 +102,8 @@
   temp2 = PyString_FromStringAndSize(NULL, $2_dim0);
   $2 = (unsigned char *)PyString_AS_STRING(temp2);
   $result = PyTuple_Pack(2, temp1, temp2);
-  Py_XDECREF(temp1);
-  Py_XDECREF(temp2);
+  Py_DECREF(temp1);
+  Py_DECREF(temp2);
 }
 
 %typemap(in) (const unsigned char *seed, unsigned long long seedlen) {
@@ -135,11 +135,11 @@
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $4 = PyString_Size($input);
+  $4 = PyString_GET_SIZE($input);
   $result = PyString_FromStringAndSize(NULL, $4 + crypto_sign_BYTES);
-  $1 = (unsigned char *)PyString_AsString($result);
+  $1 = (unsigned char *)PyString_AS_STRING($result);
   $2 = &temp;
-  $3 = (unsigned char *)PyString_AsString($input);
+  $3 = (unsigned char *)PyString_AS_STRING($input);
 }
 
 %typemap(in)
