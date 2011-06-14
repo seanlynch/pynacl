@@ -162,5 +162,36 @@ class StreamTestCase(unittest.TestCase):
         self.assertEqual(m, self.msg)
 
 
+class AuthTestCaseMixin(object):
+    msg = "The quick brown fox jumps over the lazy dog."
+    def attr(self, a):
+        return getattr(nacl, 'crypto_{0}{1}'.format(self.name, a))
+
+    def setUp(self):
+        self.k = nacl.randombytes(self.attr('_KEYBYTES'))
+        self.auth = self.attr('')
+        self.verify = self.attr('_verify')
+
+    def test_auth(self):
+        a = self.auth(self.msg, self.k)
+        self.assertTrue(self.verify(a, self.msg, self.k))
+
+    def test_badkey(self):
+        a = self.auth(self.msg, perturb(self.k))
+        self.assertFalse(self.verify(a, self.msg, self.k))
+
+    def test_badmsg(self):
+        a = self.auth(self.msg, self.k)
+        self.assertFalse(self.verify(perturb(a), self.msg, self.k))
+
+
+class AuthTestCase(AuthTestCaseMixin, unittest.TestCase):
+    name = 'auth'
+
+
+class OneTimeAuthTestCase(AuthTestCaseMixin, unittest.TestCase):
+    name = 'onetimeauth'
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -7,8 +7,8 @@ Overview
 This is a simple wrapper for the [NaCl](http://nacl.cace-project.eu/)
 cryptographic library (not Google's NativeClient). It currently wraps
 crypto\_hash\_sha256, crypto\_hash\_sha512, crypto\_randombytes, and
-the crypto\_box, crypto\_sign, crypto\_secretbox, and crypto\_stream
-default primitives.
+the crypto\_box, crypto\_sign, crypto\_secretbox, crypto\_stream,
+crypto\_auth, and crypto\_onetimeauth default primitives.
 
 
 API
@@ -32,7 +32,7 @@ First, download and build NaCl. Then:
 
     export NACL_LIB=<location of libnacl.a and randombytes.o, required>
     export NACL_INCLUDE=<location of NaCl header files>
-    python setup.py build_ext
+    python setup.py build
     sudo python setup.py install
 
 

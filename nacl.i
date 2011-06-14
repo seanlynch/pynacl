@@ -237,6 +237,18 @@
 }
 
 /**
+ * Auth typemaps
+ */
+%typemap(out) int crypto_auth_verify, int crypto_onetimeauth_verify {
+  if ($1 == 0) {
+    $result = Py_True;
+  } else {
+    $result = Py_False;
+  }
+  Py_INCREF($result);
+}
+
+/**
  * Utilities
  */
 void randombytes(unsigned char *buffer, unsigned long long bytes);
@@ -361,3 +373,37 @@ int crypto_stream_xor(unsigned char *c, const unsigned char *in,
                       unsigned long long clen,
                       const unsigned char n[crypto_stream_NONCEBYTES],
                       const unsigned char k[crypto_stream_KEYBYTES]);
+
+
+/**
+ * Authentication
+ */
+%constant int crypto_auth_BYTES;
+%constant int crypto_auth_KEYBYTES;
+%constant char *crypto_auth_PRIMITIVE;
+%constant char *crypto_auth_IMPLEMENTATION;
+%constant char *crypto_auth_VERSION;
+
+int crypto_auth(unsigned char a[crypto_auth_BYTES], const unsigned char *m,
+                unsigned long long mlen,
+                const unsigned char k[crypto_auth_KEYBYTES]);
+int crypto_auth_verify(const unsigned char a[crypto_auth_BYTES],
+                       const unsigned char *m, unsigned long long mlen,
+                       const unsigned char k[crypto_auth_KEYBYTES]);
+
+
+/**
+ * One-time authentication
+ */
+%constant int crypto_onetimeauth_BYTES;
+%constant int crypto_onetimeauth_KEYBYTES;
+%constant char *crypto_onetimeauth_PRIMITIVE;
+%constant char *crypto_onetimeauth_IMPLEMENTATION;
+%constant char *crypto_onetimeauth_VERSION;
+
+int crypto_onetimeauth(unsigned char a[crypto_onetimeauth_BYTES],
+                       const unsigned char *m, unsigned long long mlen,
+                       const unsigned char k[crypto_onetimeauth_KEYBYTES]);
+int crypto_onetimeauth_verify(const unsigned char a[crypto_onetimeauth_BYTES],
+                              const unsigned char *m, unsigned long long mlen,
+                              const unsigned char k[crypto_onetimeauth_KEYBYTES]);
