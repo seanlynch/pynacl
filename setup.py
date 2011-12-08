@@ -26,6 +26,8 @@ shost = commands.getoutput("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'
 
 if arch == 'x86_64':
     arch='amd64'
+if arch in ['i686','oi586','i486','i386']:
+    arch='x86'
 
 NACL_DIR = os.environ.get("NACL_DIR").rstrip("/")
 
