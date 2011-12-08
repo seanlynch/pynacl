@@ -165,7 +165,7 @@
 
 %typemap(in) (unsigned char *buffer, unsigned long long bytes),
              (unsigned char *c, unsigned long long clen) {
-  $2 = PyInt_AsUnsignedLongLongMask($input);
+  $2 = PyLong_AsUnsignedLongLongMask($input);
   if ($2 == -1 && PyErr_Occurred() != NULL) {
     SWIG_fail;
   }

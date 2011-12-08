@@ -15,21 +15,31 @@ NACL_LIB     - location of libnacl.(a|dll) and randombytes.o. Probably
 """
 
 import os
-import commands
+import subprocess
 from distutils.core import setup, Extension
 
 include_dirs = []
 library_dirs = []
 
-arch = commands.getoutput("uname -p")
-shost = commands.getoutput("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'")
+try:
+    arch = subprocess.check_output("uname -p", shell=True)
+except CalledProcessError:
+    arch = ''
+
+try:
+    shost = subprocess.check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True)
+except CalledProcessError:
+    shost = ''
 
 if arch == 'x86_64':
     arch='amd64'
 if arch in ['i686','oi586','i486','i386']:
     arch='x86'
 
-NACL_DIR = os.environ.get("NACL_DIR").rstrip("/")
+if os.environ.get("NACL_DIR"):
+    NACL_DIR = os.environ.get("NACL_DIR").rstrip("/")
+else:
+    NACL_DIR="."
 
 if os.environ.get("NACL_INCLUDE") == None:
     NACL_INCLUDE = NACL_DIR + '/build/%s/include/%s' % (shost, arch)
