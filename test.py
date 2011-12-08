@@ -126,6 +126,16 @@ class SignTestCase(unittest.TestCase):
         self.assertRaises(ValueError, nacl.crypto_sign_open, sm, self.pk1)
 
 
+class ScalarMultTestCase(unittest.TestCase):
+    def setUp(self):
+        self.dh_a = nacl.crypto_box_keypair()
+        self.dh_b = nacl.crypto_box_keypair()
+        
+    def test_sharedkey(self):
+        shk_a = nacl.crypto_scalarmult(self.dh_a[1], self.dh_b[0])
+        shk_b = nacl.crypto_scalarmult(self.dh_b[1], self.dh_a[0])
+        self.assertEqual(shk_a, shk_b)
+
 class SecretBoxTestCase(unittest.TestCase):
     msg = "The quick brown fox jumps over the lazy dog."
     def setUp(self):
