@@ -19,6 +19,7 @@
 %{
   #include "crypto_box.h"
   #include "crypto_sign.h"
+  #include "crypto_scalarmult_curve25519.h"
   #include "crypto_secretbox.h"
   #include "crypto_stream.h"
   #include "crypto_auth.h"
@@ -248,6 +249,7 @@
   Py_INCREF($result);
 }
 
+
 /**
  * Utilities
  */
@@ -309,6 +311,24 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
                             unsigned long long mlen,
                             const unsigned char n[crypto_box_NONCEBYTES],
                             const unsigned char k[crypto_box_BEFORENMBYTES]);
+
+/**
+ * Scalar multiplication
+ */
+%constant int crypto_scalarmult_curve25519_SCALARBYTES;
+%constant int crypto_scalarmult_curve25519_BYTES;
+
+int crypto_scalarmult_curve25519(unsigned char q[crypto_scalarmult_curve25519_BYTES],
+                                 const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES],
+                                 const unsigned char p[crypto_scalarmult_curve25519_BYTES]);
+int crypto_scalarmult_curve25519_base(unsigned char q[crypto_scalarmult_curve25519_BYTES],
+                                      const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES]);
+
+
+%pythoncode %{
+crypto_scalarmult = crypto_scalarmult_curve25519
+crypto_scalarmult_base = crypto_scalarmult_curve25519_base
+%}
 
 /**
  * Signatures
