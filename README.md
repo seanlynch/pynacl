@@ -48,8 +48,6 @@ Once NaCl is successfully built, you can clone pynacl and run:
     python setup.py build
     sudo python setup.py install
 
-NACL_LIB
-
 Testing
 -------
 
