@@ -22,7 +22,7 @@ include_dirs = []
 library_dirs = []
 
 try:
-    arch = subprocess.check_output("uname -p", shell=True)
+    arch = subprocess.check_output("uname -m", shell=True)
 except CalledProcessError:
     arch = ''
 
@@ -67,6 +67,8 @@ else:
 nacl_module = Extension('_nacl', ['nacl.i'],
                         include_dirs=include_dirs,
                         library_dirs=library_dirs,
+                        extra_compiler_args=['-fPIC'],
+                        extra_link_args=['-fPIC'],
                         libraries=['nacl'],
                         extra_objects=extra_objects)
 
