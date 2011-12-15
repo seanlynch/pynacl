@@ -22,12 +22,12 @@ include_dirs = []
 library_dirs = []
 
 try:
-    arch = subprocess.check_output("uname -m", shell=True)
+    arch = subprocess.check_output("uname -m", shell=True).rstrip().decode("utf8")
 except CalledProcessError:
     arch = ''
 
 try:
-    shost = subprocess.check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True)
+    shost = subprocess.check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True).rstrip().decode("utf8")
 except CalledProcessError:
     shost = ''
 
@@ -45,7 +45,7 @@ if os.environ.get("NACL_INCLUDE") == None:
     NACL_INCLUDE = NACL_DIR + '/build/%s/include/%s' % (shost, arch)
 else:
     NACL_INCLUDE = os.environ.get("NACL_INCLUDE")
-    
+
 if os.environ.get("NACL_LIB") == None:
     NACL_LIB = NACL_DIR + '/build/%s/lib/%s' % (shost, arch)
 else:
