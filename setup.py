@@ -21,14 +21,22 @@ from distutils.core import setup, Extension
 include_dirs = []
 library_dirs = []
 
+def check_output(command, **kwargs):
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, **kwargs)
+    output, err = p.communicate()
+    rc = p.poll()
+    if rc:
+        raise subprocess.CalledProcessError(rc, command, output=output)
+    return output
+
 try:
-    arch = subprocess.check_output("uname -m", shell=True).rstrip().decode("utf8")
-except CalledProcessError:
+    arch = check_output("uname -m", shell=True).rstrip().decode("utf8")
+except subprocess.CalledProcessError:
     arch = ''
 
 try:
-    shost = subprocess.check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True).rstrip().decode("utf8")
-except CalledProcessError:
+    shost = check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True).rstrip().decode("utf8")
+except subprocess.CalledProcessError:
     shost = ''
 
 if arch == 'x86_64':
