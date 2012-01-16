@@ -73,6 +73,12 @@
     return 0;
   }
 
+  #if PY_MAJOR_VERSION > 2
+  #define MAKEINT PyLong_AsUnsignedLongLong
+  #else
+  #define MAKEINT PyInt_AsUnsignedLongLongMask
+  #endif
+
 %}
 
 %include <typemaps.i>
@@ -165,7 +171,7 @@
 
 %typemap(in) (unsigned char *buffer, unsigned long long bytes),
              (unsigned char *c, unsigned long long clen) {
-  $2 = PyLong_AsUnsignedLongLongMask($input);
+  $2 = MAKEINT($input);
   if ($2 == -1 && PyErr_Occurred() != NULL) {
     SWIG_fail;
   }
