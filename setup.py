@@ -23,11 +23,27 @@ shost = re.sub(r'[^a-zA-Z0-9]+', '', hostname.split(".")[0])
 
 # http://docs.python.org/library/platform.html#platform.architecture
 # recommends this to test the 64-bitness of the current interpreter:
-#  is_64bits = sys.maxsize > 2**32
+is_64bits = sys.maxsize > 2**32
+# My OS-X 10.6 laptop reports platform.uname()[4]=='i386', but
+# is_64bits==True, and gcc appears to use -m64 by default. The symptoms of
+# getting it wrong are errors during any compilation that tries to use
+# libnacl.a:
+#  ld: warning: in .../libnacl.a, file is not of required architecture
+#  Undefined symbols:
+#    "_crypto_hash_sha512_ref", referenced from:
+#        _main in ....o
+#  ld: symbol(s) not found
 
-if arch == 'x86_64':
+# note that system Python will try to compile everything for multiple arches
+# at once ("universal binaries"), with "-arch i386 -arch ppc -arch x86_64",
+# but each libnacl.a is for just a single arch (there are two copies, in
+# lib/x86/ and lib/amd64). So you can expect some harmless "not of required
+# architecture" warnings when running setup.py build, probably four:
+# (libnacl.a,randombytes.o) * (ppc, i386).
+
+if is_64bits:
     arch='amd64'
-if arch in ['i686','oi586','i486','i386']:
+else:
     arch='x86'
 
 EMBEDDED_NACL = "nacl-20110221"
