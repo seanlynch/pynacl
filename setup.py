@@ -14,63 +14,55 @@ NACL_LIB     - location of libnacl.(a|dll) and randombytes.o. Probably
 
 """
 
-import os
-import subprocess
+import sys, os, platform, re
 from distutils.core import setup, Extension
 
-include_dirs = []
-library_dirs = []
+arch = platform.uname()[4]
+hostname = platform.node()
+shost = re.sub(r'[^a-zA-Z0-9]+', '', hostname.split(".")[0])
 
-def check_output(command, **kwargs):
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, **kwargs)
-    output, err = p.communicate()
-    rc = p.poll()
-    if rc:
-        raise subprocess.CalledProcessError(rc, command, output=output)
-    return output
-
-try:
-    arch = check_output("uname -m", shell=True).rstrip().decode("utf8")
-except subprocess.CalledProcessError:
-    arch = ''
-
-try:
-    shost = check_output("hostname | sed 's/\..*//' | tr -cd '[a-z][A-Z][0-9]'", shell=True).rstrip().decode("utf8")
-except subprocess.CalledProcessError:
-    shost = ''
+# http://docs.python.org/library/platform.html#platform.architecture
+# recommends this to test the 64-bitness of the current interpreter:
+#  is_64bits = sys.maxsize > 2**32
 
 if arch == 'x86_64':
     arch='amd64'
 if arch in ['i686','oi586','i486','i386']:
     arch='x86'
 
-if os.environ.get("NACL_DIR"):
-    NACL_DIR = os.environ.get("NACL_DIR").rstrip("/")
-else:
-    NACL_DIR="."
+EMBEDDED_NACL = "nacl-20110221"
+BUILD_DIR = os.path.join(EMBEDDED_NACL, "build", shost)
+if not os.path.isdir(BUILD_DIR):
+    if not os.path.isdir(os.path.join(EMBEDDED_NACL, "build")):
+        print("""\
+It looks like you haven't built NaCl yet. Please do:
 
-if os.environ.get("NACL_INCLUDE") == None:
-    NACL_INCLUDE = NACL_DIR + '/build/%s/include/%s' % (shost, arch)
-else:
-    NACL_INCLUDE = os.environ.get("NACL_INCLUDE")
+ cd %(EMBEDDED_NACL)s
+ ./do
 
-if os.environ.get("NACL_LIB") == None:
-    NACL_LIB = NACL_DIR + '/build/%s/lib/%s' % (shost, arch)
-else:
-    NACL_LIB = os.environ.get("NACL_LIB")
+That will compile in furious silence for a long time (25 minutes on
+my 2010 laptop). If you want to watch for progress, look in
+%(LOGFILE)s .
 
-if NACL_INCLUDE is not None:
-    include_dirs.append(NACL_INCLUDE)
-else:
-    include_dirs.append('.')
+Then re-run this setup.py command.""") \
+        % { "EMBEDDED_NACL": EMBEDDED_NACL,
+            "LOGFILE": os.path.join(BUILD_DIR, "log") }
+    else:
+        print("""\
+I must have guessed the nacl build dir wrong (or maybe you haven't
+built it yet). I was expecting to find '%s' in:
 
-if NACL_LIB is not None:
-    library_dirs.append(NACL_LIB)
-    extra_objects = ['{0}/randombytes.o'.format(NACL_LIB)]
-else:
-    # This probably won't work.
-    extra_objects = ['./randombytes.o']
+ %s
 
+but it contains %s instead.""") \
+        % (shost,
+           os.path.join(EMBEDDED_NACL, "build"),
+           os.listdir(os.path.join(EMBEDDED_NACL, "build")))
+    sys.exit(1)
+
+include_dirs = [os.path.join(BUILD_DIR, "include", arch)]
+library_dirs = [os.path.join(BUILD_DIR, "lib", arch)]
+extra_objects = [os.path.join(BUILD_DIR, "lib", arch, "randombytes.o")]
 
 nacl_module = Extension('_nacl', ['nacl.i'],
                         include_dirs=include_dirs,
