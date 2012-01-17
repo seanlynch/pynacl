@@ -1,23 +1,11 @@
 #!/usr/bin/env python
 """
 Build and install the NaCl wrapper.
-
-Environment variables:
-NACL_DIR     - location of NaCl's main directory. The INCLUDE and LIB
-               build directories are found automatically
-
-THESE ENVIRONMENT VARIABLES ARE NOW OPTIONAL
-NACL_INCLUDE - location of NaCl's include files. Not needed if they're
-               in a normal system location.
-NACL_LIB     - location of libnacl.(a|dll) and randombytes.o. Probably
-               needed no matter what because of how we find randombytes.o.
-
 """
 
 import sys, os, platform, re
 from distutils.core import setup, Extension
 
-arch = platform.uname()[4]
 hostname = platform.node()
 shost = re.sub(r'[^a-zA-Z0-9]+', '', hostname.split(".")[0])
 
@@ -47,38 +35,38 @@ else:
     arch='x86'
 
 EMBEDDED_NACL = "nacl-20110221"
-BUILD_DIR = os.path.join(EMBEDDED_NACL, "build", shost)
+BUILD_DIR = os.path.join(EMBEDDED_NACL, "build")
 if not os.path.isdir(BUILD_DIR):
-    if not os.path.isdir(os.path.join(EMBEDDED_NACL, "build")):
-        print("""\
+    print("""\
 It looks like you haven't built NaCl yet. Please do:
 
- cd %(EMBEDDED_NACL)s
+ cd %s
  ./do
 
 That will compile in furious silence for a long time (25 minutes on
 my 2010 laptop). If you want to watch for progress, look in
-%(LOGFILE)s .
+%s/*/log .
 
-Then re-run this setup.py command.""") \
-        % { "EMBEDDED_NACL": EMBEDDED_NACL,
-            "LOGFILE": os.path.join(BUILD_DIR, "log") }
-    else:
-        print("""\
-I must have guessed the nacl build dir wrong (or maybe you haven't
-built it yet). I was expecting to find '%s' in:
-
- %s
-
-but it contains %s instead.""") \
-        % (shost,
-           os.path.join(EMBEDDED_NACL, "build"),
-           os.listdir(os.path.join(EMBEDDED_NACL, "build")))
+Then re-run this setup.py command.""") % (EMBEDDED_NACL, BUILD_DIR)
     sys.exit(1)
 
-include_dirs = [os.path.join(BUILD_DIR, "include", arch)]
-library_dirs = [os.path.join(BUILD_DIR, "lib", arch)]
-extra_objects = [os.path.join(BUILD_DIR, "lib", arch, "randombytes.o")]
+dirs = os.listdir(BUILD_DIR)
+if len(dirs) == 1:
+    NACL_DIR = os.path.join(BUILD_DIR, dirs[0])
+elif shost in dirs:
+    NACL_DIR = os.path.join(BUILD_DIR, shost)
+else:
+    print("""\
+This NaCl directory appears to have been compiled for multiple machines. I
+was expecting to use '%s', but found [%s] in:
+
+ %s
+""") % (shost, ", ".join(dirs), BUILD_DIR)
+    sys.exit(1)
+
+include_dirs = [os.path.join(NACL_DIR, "include", arch)]
+library_dirs = [os.path.join(NACL_DIR, "lib", arch)]
+extra_objects = [os.path.join(NACL_DIR, "lib", arch, "randombytes.o")]
 
 nacl_module = Extension('_nacl', ['nacl.i'],
                         include_dirs=include_dirs,
