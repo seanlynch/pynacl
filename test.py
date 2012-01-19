@@ -4,8 +4,15 @@ import unittest
 
 import nacl
 
+if bytes([65]) == b"A": # py3
+    def bchr(c):
+        return bytes([c])
+else: # py2
+    def bchr(c):
+        return chr(c)
+
 def perturb(s):
-    return s[:-1] + chr((ord(s[-1]) + 1) % 256)
+    return s[:-1] + bchr((ord(s[-1:]) + 1) % 256)
 
 
 class RandomTestCase(unittest.TestCase):
@@ -21,14 +28,14 @@ class RandomTestCase(unittest.TestCase):
 
 
 class HashTestCase(unittest.TestCase):
-    fox = "The quick brown fox jumps over the lazy dog."
+    fox = b"The quick brown fox jumps over the lazy dog."
     def check_hash(self, func, s, h):
         f = getattr(nacl, func)
         r = f(s)
-        self.assertEqual(binascii.b2a_hex(r), h)
+        self.assertEqual(binascii.b2a_hex(r).decode("ascii"), h)
 
     def test_sha256_empty(self):
-        self.check_hash("crypto_hash_sha256", "",
+        self.check_hash("crypto_hash_sha256", b"",
                         "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca4959"
                         "91b7852b855")
 
@@ -38,7 +45,7 @@ class HashTestCase(unittest.TestCase):
                         "48c8635fb6c")
 
     def test_sha512_empty(self):
-        self.check_hash("crypto_hash_sha512", "",
+        self.check_hash("crypto_hash_sha512", b"",
                         "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a"
                         "921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47"
                         "417a81a538327af927da3e")
@@ -51,7 +58,7 @@ class HashTestCase(unittest.TestCase):
 
 
 class BoxTestCase(unittest.TestCase):
-    msg = "The quick brown fox jumps over the lazy dog."
+    msg = b"The quick brown fox jumps over the lazy dog."
 
     def nonce(self):
         return nacl.randombytes(nacl.crypto_box_NONCEBYTES)
@@ -91,11 +98,11 @@ class BoxTestCase(unittest.TestCase):
 
 
 class SignTestCase(unittest.TestCase):
-    msg = "The quick brown fox jumps over the lazy dog."
+    msg = b"The quick brown fox jumps over the lazy dog."
 
     def setUp(self):
         self.pk, self.sk = nacl.crypto_sign_keypair()
-        self.pk1, self.sk1 = nacl.crypto_sign_keypair_fromseed("hello world")
+        self.pk1, self.sk1 = nacl.crypto_sign_keypair_fromseed(b"hello world")
 
     def test_keys_different(self):
         self.assertNotEqual(self.pk, self.pk1)
@@ -108,10 +115,10 @@ class SignTestCase(unittest.TestCase):
         self.assertEqual(len(self.sk), nacl.crypto_sign_SECRETKEYBYTES)
 
     def test_seed(self):
-        self.assertEqual(binascii.b2a_hex(self.pk1),
+        self.assertEqual(binascii.b2a_hex(self.pk1).decode("ascii"),
                          "683d8d0458ef6ec4cfef25157f5d88ce7a0bba334fd102fafc7e"
                          "2751410d5718")
-        self.assertEqual(binascii.b2a_hex(self.sk1),
+        self.assertEqual(binascii.b2a_hex(self.sk1).decode("ascii"),
                          "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd"
                          "3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f"
                          "605dcf7dc5542e93ae9cd76f")
@@ -137,7 +144,7 @@ class ScalarMultTestCase(unittest.TestCase):
         self.assertEqual(shk_a, shk_b)
 
 class SecretBoxTestCase(unittest.TestCase):
-    msg = "The quick brown fox jumps over the lazy dog."
+    msg = b"The quick brown fox jumps over the lazy dog."
     def setUp(self):
         self.k = nacl.randombytes(nacl.crypto_secretbox_KEYBYTES)
 
@@ -150,13 +157,13 @@ class SecretBoxTestCase(unittest.TestCase):
     def test_secretbox_badsig(self):
         nonce = nacl.randombytes(nacl.crypto_secretbox_NONCEBYTES)
         c = nacl.crypto_secretbox(self.msg, nonce, self.k)
-        c1 = c[:-1] + chr((ord(c[-1]) + 1) % 256)
+        c1 = c[:-1] + bchr((ord(c[-1:]) + 1) % 256)
         self.assertRaises(ValueError, nacl.crypto_secretbox_open, c1, nonce,
                           self.k)
 
 
 class StreamTestCase(unittest.TestCase):
-    msg = "The quick brown fox jumps over the lazy dog."
+    msg = b"The quick brown fox jumps over the lazy dog."
     def setUp(self):
         self.k = nacl.randombytes(nacl.crypto_stream_KEYBYTES)
 
@@ -173,7 +180,7 @@ class StreamTestCase(unittest.TestCase):
 
 
 class AuthTestCaseMixin(object):
-    msg = "The quick brown fox jumps over the lazy dog."
+    msg = b"The quick brown fox jumps over the lazy dog."
     def attr(self, a):
         return getattr(nacl, 'crypto_{0}{1}'.format(self.name, a))
 
