@@ -19,6 +19,7 @@
 %{
   #include "crypto_box.h"
   #include "crypto_sign.h"
+  #include "crypto_scalarmult_curve25519.h"
   #include "crypto_secretbox.h"
   #include "crypto_stream.h"
   #include "crypto_auth.h"
@@ -72,22 +73,28 @@
     return 0;
   }
 
+  #if PY_MAJOR_VERSION > 2
+  #define MAKEINT PyLong_AsUnsignedLongLong
+  #else
+  #define MAKEINT PyInt_AsUnsignedLongLongMask
+  #endif
+
 %}
 
 %include <typemaps.i>
 
 %typemap(in) (const unsigned char *m, unsigned long long mlen) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $1 = (unsigned char *)PyString_AS_STRING($input);
-  $2 = PyString_GET_SIZE($input);
+  $1 = (unsigned char *)PyBytes_AS_STRING($input);
+  $2 = PyBytes_GET_SIZE($input);
 }
 
 %typemap(in, numinputs=0) unsigned char [ANY] {
-  $result = PyString_FromStringAndSize(NULL, $1_dim0);
-  $1 = (unsigned char *)PyString_AS_STRING($result);
+  $result = PyBytes_FromStringAndSize(NULL, $1_dim0);
+  $1 = (unsigned char *)PyBytes_AS_STRING($result);
 }
 
 // For some reason [ANY] doesn't work for multi-argument typemaps.
@@ -97,91 +104,91 @@
                           (unsigned char pk[crypto_box_PUBLICKEYBYTES],
                            unsigned char sk[crypto_box_SECRETKEYBYTES])
                           (PyObject *temp1, PyObject *temp2) {
-  temp1 = PyString_FromStringAndSize(NULL, $1_dim0);
-  $1 = (unsigned char *)PyString_AS_STRING(temp1);
-  temp2 = PyString_FromStringAndSize(NULL, $2_dim0);
-  $2 = (unsigned char *)PyString_AS_STRING(temp2);
+  temp1 = PyBytes_FromStringAndSize(NULL, $1_dim0);
+  $1 = (unsigned char *)PyBytes_AS_STRING(temp1);
+  temp2 = PyBytes_FromStringAndSize(NULL, $2_dim0);
+  $2 = (unsigned char *)PyBytes_AS_STRING(temp2);
   $result = PyTuple_Pack(2, temp1, temp2);
   Py_DECREF(temp1);
   Py_DECREF(temp2);
 }
 
 %typemap(in) (const unsigned char *seed, unsigned long long seedlen) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $1 = (unsigned char *)PyString_AS_STRING($input);
-  $2 = (unsigned long long)PyString_GET_SIZE($input);
+  $1 = (unsigned char *)PyBytes_AS_STRING($input);
+  $2 = (unsigned long long)PyBytes_GET_SIZE($input);
 }
 
 %typemap(in) const unsigned char [ANY] {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  if (PyString_GET_SIZE($input) != $1_dim0) {
+  if (PyBytes_GET_SIZE($input) != $1_dim0) {
     PyErr_Format(PyExc_ValueError, "Expecting a string of length %d", $1_dim0);
     SWIG_fail;
   }
-  $1 = (unsigned char *)PyString_AS_STRING($input);
+  $1 = (unsigned char *)PyBytes_AS_STRING($input);
 }
 
 %typemap(in)
   (unsigned char *sm, unsigned long long *smlen,
    const unsigned char *m, unsigned long long mlen)
      (unsigned long long temp) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $4 = PyString_GET_SIZE($input);
-  $result = PyString_FromStringAndSize(NULL, $4 + crypto_sign_BYTES);
-  $1 = (unsigned char *)PyString_AS_STRING($result);
+  $4 = PyBytes_GET_SIZE($input);
+  $result = PyBytes_FromStringAndSize(NULL, $4 + crypto_sign_BYTES);
+  $1 = (unsigned char *)PyBytes_AS_STRING($result);
   $2 = &temp;
-  $3 = (unsigned char *)PyString_AS_STRING($input);
+  $3 = (unsigned char *)PyBytes_AS_STRING($input);
 }
 
 %typemap(in)
   (unsigned char *m, unsigned long long *mlen,
    const unsigned char *sm, unsigned long long smlen)
   (unsigned long long temp) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $4 = PyString_GET_SIZE($input);
-  $result = PyString_FromStringAndSize(NULL, $4);
-  $1 = (unsigned char *)PyString_AS_STRING($result);
+  $4 = PyBytes_GET_SIZE($input);
+  $result = PyBytes_FromStringAndSize(NULL, $4);
+  $1 = (unsigned char *)PyBytes_AS_STRING($result);
   $2 = &temp;
-  $3 = (unsigned char *)PyString_AS_STRING($input);
+  $3 = (unsigned char *)PyBytes_AS_STRING($input);
 }
 
 %typemap(argout) (unsigned char *sm, unsigned long long *smlen),
   (unsigned char *m, unsigned long long *mlen) {
-  _PyString_Resize(&$result, *$2);
+  _PyBytes_Resize(&$result, *$2);
 }
 
 %typemap(in) (unsigned char *buffer, unsigned long long bytes),
              (unsigned char *c, unsigned long long clen) {
-  $2 = PyInt_AsUnsignedLongLongMask($input);
+  $2 = MAKEINT($input);
   if ($2 == -1 && PyErr_Occurred() != NULL) {
     SWIG_fail;
   }
-  $result = PyString_FromStringAndSize(NULL, $2);
-  $1 = (unsigned char *)PyString_AS_STRING($result);
+  $result = PyBytes_FromStringAndSize(NULL, $2);
+  $1 = (unsigned char *)PyBytes_AS_STRING($result);
 }
 
 %typemap(in) (unsigned char *c, const unsigned char *in,
               unsigned long long clen) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $3 = PyString_GET_SIZE($input);
-  $result = PyString_FromStringAndSize(NULL, $3);
-  $1 = (unsigned char *)PyString_AS_STRING($result);
-  $2 = (unsigned char *)PyString_AS_STRING($input);
+  $3 = PyBytes_GET_SIZE($input);
+  $result = PyBytes_FromStringAndSize(NULL, $3);
+  $1 = (unsigned char *)PyBytes_AS_STRING($result);
+  $2 = (unsigned char *)PyBytes_AS_STRING($input);
 }
 
 %typemap(out) int {
@@ -208,15 +215,15 @@
    (unsigned char out[crypto_secretbox_ZEROBYTES],
     const unsigned char in[crypto_secretbox_BOXZEROBYTES],
     unsigned long long mlen) {
-  if (!PyString_Check($input)) {
+  if (!PyBytes_Check($input)) {
     PyErr_SetString(PyExc_ValueError, "Expecting a string");
     SWIG_fail;
   }
-  $3 = PyString_GET_SIZE($input) + $2_dim0;
+  $3 = PyBytes_GET_SIZE($input) + $2_dim0;
   // Need to pad the beginning
   $1 = (unsigned char *)calloc($3 + $1_dim0, sizeof(unsigned char));
   $2 = (unsigned char *)calloc($3 + $2_dim0, sizeof(unsigned char));
-  memcpy(&$2[$2_dim0], PyString_AS_STRING($input), $3);
+  memcpy(&$2[$2_dim0], PyBytes_AS_STRING($input), $3);
 }
 
 %typemap(argout) (unsigned char out[crypto_box_BOXZEROBYTES],
@@ -231,7 +238,7 @@
    (unsigned char out[crypto_secretbox_ZEROBYTES],
     const unsigned char in[crypto_secretbox_BOXZEROBYTES],
     unsigned long long mlen) {
-  $result = PyString_FromStringAndSize((char *)&$1[$1_dim0], $3 - $1_dim0);
+  $result = PyBytes_FromStringAndSize((char *)&$1[$1_dim0], $3 - $1_dim0);
   free($1);
   free($2);
 }
@@ -247,6 +254,7 @@
   }
   Py_INCREF($result);
 }
+
 
 /**
  * Utilities
@@ -309,6 +317,24 @@ int crypto_box_open_afternm(unsigned char out[crypto_box_ZEROBYTES],
                             unsigned long long mlen,
                             const unsigned char n[crypto_box_NONCEBYTES],
                             const unsigned char k[crypto_box_BEFORENMBYTES]);
+
+/**
+ * Scalar multiplication
+ */
+%constant int crypto_scalarmult_curve25519_SCALARBYTES;
+%constant int crypto_scalarmult_curve25519_BYTES;
+
+int crypto_scalarmult_curve25519(unsigned char q[crypto_scalarmult_curve25519_BYTES],
+                                 const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES],
+                                 const unsigned char p[crypto_scalarmult_curve25519_BYTES]);
+int crypto_scalarmult_curve25519_base(unsigned char q[crypto_scalarmult_curve25519_BYTES],
+                                      const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES]);
+
+
+%pythoncode %{
+crypto_scalarmult = crypto_scalarmult_curve25519
+crypto_scalarmult_base = crypto_scalarmult_curve25519_base
+%}
 
 /**
  * Signatures

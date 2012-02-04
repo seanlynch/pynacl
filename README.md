@@ -8,7 +8,7 @@ This is a simple wrapper for the [NaCl](http://nacl.cace-project.eu/)
 cryptographic library (not Google's NativeClient). It currently wraps
 crypto\_hash\_sha256, crypto\_hash\_sha512, crypto\_randombytes, and
 the crypto\_box, crypto\_sign, crypto\_secretbox, crypto\_stream,
-crypto\_auth, and crypto\_onetimeauth default primitives.
+crypto\_auth, crypto\_scalarmult and crypto\_onetimeauth default primitives.
 
 
 API
@@ -28,13 +28,25 @@ test.py and the [NaCl documentation](http://nacl.cace-project.eu/).
 Installation
 ----------
 
-First, download and build NaCl. Then:
+First, download NaCl. NaCl does not build with the -fPIC flag and
+therefore you must modify a file:
 
-    export NACL_LIB=<location of libnacl.a and randombytes.o, required>
-    export NACL_INCLUDE=<location of NaCl header files>
+    cd <location of extracted NaCl>
+    sed -i "s/$/ -fPIC/" okcompilers/c*
+    
+If you want the build status output printed to screen, you may also do:
+    
+    sed -i "s/exec 2\?>.*//" do
+    
+You can then build NaCl with:
+    
+    ./do
+
+Once NaCl is successfully built, you can clone pynacl and run:
+
+    export NACL_DIR=<location of extracted nacl directory>
     python setup.py build
     sudo python setup.py install
-
 
 Testing
 -------
