@@ -18,7 +18,6 @@
 
 %{
   #include "crypto_box.h"
-  #include "crypto_scalarmult_curve25519.h"
   #include "crypto_sign.h"
   #include "crypto_scalarmult_curve25519.h"
   #include "crypto_secretbox.h"
@@ -339,24 +338,6 @@ int crypto_scalarmult_curve25519_base(unsigned char
                                       const unsigned char
                                         n[crypto_scalarmult_curve25519_SCALARBYTES]);
 
-
-/**
- * Scalar multiplication
- */
-%constant int crypto_scalarmult_curve25519_SCALARBYTES;
-%constant int crypto_scalarmult_curve25519_BYTES;
-
-int crypto_scalarmult_curve25519(unsigned char q[crypto_scalarmult_curve25519_BYTES],
-                                 const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES],
-                                 const unsigned char p[crypto_scalarmult_curve25519_BYTES]);
-int crypto_scalarmult_curve25519_base(unsigned char q[crypto_scalarmult_curve25519_BYTES],
-                                      const unsigned char n[crypto_scalarmult_curve25519_SCALARBYTES]);
-
-
-%pythoncode %{
-crypto_scalarmult = crypto_scalarmult_curve25519
-crypto_scalarmult_base = crypto_scalarmult_curve25519_base
-%}
 
 /**
  * Signatures
