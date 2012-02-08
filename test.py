@@ -115,6 +115,27 @@ class ScalarMultTestCase(unittest.TestCase):
         s2 = nacl.crypto_scalarmult_curve25519(perturb(self.sk2), self.pk1)
         self.assertNotEqual(s1, s2)
 
+    def test_sharedkey(self):
+        dh_a = nacl.crypto_box_keypair()
+        dh_b = nacl.crypto_box_keypair()
+        shk_a = nacl.crypto_scalarmult(dh_a[1], dh_b[0])
+        shk_b = nacl.crypto_scalarmult(dh_b[1], dh_a[0])
+        self.assertEqual(shk_a, shk_b)
+
+    def test_known(self):
+        sk3 = binascii.a2b_hex("5305ca1802ea41cd48f904e85d97868c"
+                               "c0f30819473cd07727d7c44974bc8e58")
+        pk3 = nacl.crypto_scalarmult_curve25519_base(sk3)
+        sk4 = binascii.a2b_hex("fba6870b71790aa6ca40ca1fe29533a4"
+                               "ab09d401b3b2c624ad15d615454ba27a")
+        pk4 = nacl.crypto_scalarmult_curve25519_base(sk4)
+
+        s1 = nacl.crypto_scalarmult_curve25519(sk3, pk4)
+        s2 = nacl.crypto_scalarmult_curve25519(sk4, pk3)
+        expected = ("63b564b8218367b7d8d700cdc0d2e23a"
+                    "65ef73905606f9c2e23b00d818c16a7e")
+        self.assertEqual(binascii.b2a_hex(s1), expected)
+        self.assertEqual(binascii.b2a_hex(s2), expected)
 
 class SignTestCase(unittest.TestCase):
     msg = b"The quick brown fox jumps over the lazy dog."
@@ -151,16 +172,6 @@ class SignTestCase(unittest.TestCase):
         sm = nacl.crypto_sign(self.msg, self.sk)
         self.assertRaises(ValueError, nacl.crypto_sign_open, sm, self.pk1)
 
-
-class ScalarMultTestCase(unittest.TestCase):
-    def setUp(self):
-        self.dh_a = nacl.crypto_box_keypair()
-        self.dh_b = nacl.crypto_box_keypair()
-        
-    def test_sharedkey(self):
-        shk_a = nacl.crypto_scalarmult(self.dh_a[1], self.dh_b[0])
-        shk_b = nacl.crypto_scalarmult(self.dh_b[1], self.dh_a[0])
-        self.assertEqual(shk_a, shk_b)
 
 class SecretBoxTestCase(unittest.TestCase):
     msg = b"The quick brown fox jumps over the lazy dog."
