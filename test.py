@@ -74,6 +74,9 @@ class BoxTestCase(unittest.TestCase):
     def test_box(self):
         nonce = self.nonce()
         c = nacl.crypto_box(self.msg, nonce, self.pk2, self.sk1)
+        # boxing is deterministic
+        c2 = nacl.crypto_box(self.msg, nonce, self.pk2, self.sk1)
+        self.assertEqual(c, c2)
         m = nacl.crypto_box_open(c, nonce, self.pk1, self.sk2)
         self.assertEqual(m, self.msg)
 
@@ -95,6 +98,17 @@ class BoxTestCase(unittest.TestCase):
         c = nacl.crypto_box(self.msg, nonce, perturb(self.pk1), self.sk2)
         self.assertRaises(ValueError, nacl.crypto_box_open, c, nonce, self.pk2,
                           self.sk1)
+
+    def test_box_beforeafter(self):
+        K = nacl.crypto_box_beforenm(self.pk1, self.sk2)
+        self.assertEqual(K, nacl.crypto_box_beforenm(self.pk1, self.sk2))
+        self.assertEqual(K, nacl.crypto_box_beforenm(self.pk2, self.sk1))
+        nonce = self.nonce()
+        c = nacl.crypto_box_afternm(self.msg, nonce, K)
+        c2 = nacl.crypto_box_afternm(self.msg, nonce, K)
+        self.assertEqual(c, c2) # deterministic
+        m = nacl.crypto_box_open_afternm(c, nonce, K)
+        self.assertEqual(m, self.msg)
 
 
 class ScalarMultTestCase(unittest.TestCase):
