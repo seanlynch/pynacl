@@ -118,8 +118,8 @@ class ScalarMultTestCase(unittest.TestCase):
     def test_sharedkey(self):
         dh_a = nacl.crypto_box_keypair()
         dh_b = nacl.crypto_box_keypair()
-        shk_a = nacl.crypto_scalarmult(dh_a[1], dh_b[0])
-        shk_b = nacl.crypto_scalarmult(dh_b[1], dh_a[0])
+        shk_a = nacl.crypto_scalarmult_curve25519(dh_a[1], dh_b[0])
+        shk_b = nacl.crypto_scalarmult_curve25519(dh_b[1], dh_a[0])
         self.assertEqual(shk_a, shk_b)
 
     def test_known(self):
