@@ -46,10 +46,17 @@ test.py and the [NaCl documentation](http://nacl.cace-project.eu/).
 Installation
 ----------
 
-First, download NaCl. NaCl does not build with the -fPIC flag and
-therefore you must modify a file:
+SWIG is required to generate the wrapper:
 
-    cd <location of extracted NaCl>
+    apt-get install swig
+
+Download pynacl with the embedded NaCL (verify it's the latest version):
+
+    git clone git@github.com:seanlynch/pynacl.git
+
+NaCl does not build with the -fPIC flag and therefore you must modify a file:
+
+    cd pynacl/nacl-20110221
     sed -i "s/$/ -fPIC/" okcompilers/c*
     
 If you want the build status output printed to screen, you may also do:
@@ -60,9 +67,9 @@ You can then build NaCl with:
     
     ./do
 
-Once NaCl is successfully built, you can clone pynacl and run:
+Once NaCl is successfully built, you can run:
 
-    export NACL_DIR=<location of extracted nacl directory>
+    cd ../
     python setup.py build
     sudo python setup.py install
 
